@@ -3,8 +3,6 @@ package com.example.simplecameraapplication
 import android.content.Intent
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import com.example.simplecameraapplication.CameraActivity
-import com.example.simplecameraapplication.GalleryActivity
 import com.example.simplecameraapplication.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
