@@ -3,11 +3,11 @@ package com.example.simplecameraapplication
 import android.Manifest
 import android.content.DialogInterface
 import android.content.pm.PackageManager
-import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.view.ContextThemeWrapper
@@ -16,7 +16,6 @@ import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.simplecameraapplication.databinding.ActivityCameraBinding
 import java.io.File
@@ -38,10 +37,38 @@ class CameraActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
+        val requestPermissionLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted: Boolean ->
+                if (isGranted) {
+                    startCamera()
+                } else {
+                    if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)){
+                        //user refused permission one time
+                        Toast.makeText(
+                            this,
+                            "Need permission to use camera. Please allow it next time",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                    }
+                    else {
+                        //permission refused permanently
+                        Toast.makeText(
+                            this,
+                            "Please, grant permission to use camera in settings",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                    }
+                }
+            }
+
         when {
             allPermissionsGranted() -> {
-                        //We have the permission
-                        startCamera()
+                //We have the permission
+                startCamera()
             }
             shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) -> {
                 //Show Rationale dialog
@@ -50,18 +77,14 @@ class CameraActivity : AppCompatActivity() {
                     .setPositiveButton("OK", DialogInterface.OnClickListener(
                         function = {dialog: DialogInterface, which :Int ->
                             //Request permission after showing rationale
-                            ActivityCompat.requestPermissions(
-                                this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-                        )
+                            requestPermissionLauncher.launch(Manifest.permission.CAMERA)
                     }))
                     .create()
                     .show()
             }
             else -> {
                 //First time permission request
-                ActivityCompat.requestPermissions(
-                    this, REQUIRED_PERMISSIONS, REQUEST_CODE_PERMISSIONS
-                )
+                requestPermissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
 
@@ -74,36 +97,6 @@ class CameraActivity : AppCompatActivity() {
 
     private fun allPermissionsGranted() = REQUIRED_PERMISSIONS.all {
         ContextCompat.checkSelfPermission(baseContext, it) == PackageManager.PERMISSION_GRANTED
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE_PERMISSIONS) {
-            if (grantResults[0] == PERMISSION_GRANTED) {
-                startCamera()
-            } else if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)){
-                //user refused permission one time
-                Toast.makeText(
-                    this,
-                    "Need permission to use camera. Please allow it next time",
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish()
-            }
-            else{
-                //permission refused permanently
-                Toast.makeText(
-                    this,
-                    "Please, grant permission to use camera in settings",
-                    Toast.LENGTH_SHORT
-                ).show()
-                finish()
-            }
-        }
     }
 
     private fun startCamera() {
